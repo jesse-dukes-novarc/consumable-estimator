@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import logo from "./novarc-logo.svg";
+import jointDiagram from './Joint.png';
 
 // Standard Pipe Dimensions Dictionary (OD in inches, Wall Thickness in inches)
 const PIPE_DATA = {
@@ -154,7 +155,7 @@ export default function App() {
   <div className="p-4 max-w-5xl mx-auto">
     <div className="flex items-center gap-4 mb-4">
       <img src={logo} alt="Company Logo" style={{ height: "40px", maxWidth: "180px", objectFit: "contain" }} />
-      <h1 className="text-2xl font-bold">Spool Robot Welding Calculator</h1>
+      <h1 className="text-2xl font-bold">SWR Consumable Estimator</h1>
     </div>
       
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -163,7 +164,7 @@ export default function App() {
           <h2 className="font-semibold mb-2">Pipe & Process Selection</h2>
           <div className="flex gap-2 mb-2">
             <select name="nps" onChange={handleChange} className="border p-2 w-1/2">
-              <option value="">Select Pipe Size (NPS)</option>
+              <option value="">Select Pipe Size (OD)</option>
               {Object.keys(PIPE_DATA).map((size) => (
                 <option key={size} value={size}>{size}"</option>
               ))}
@@ -190,10 +191,24 @@ export default function App() {
             ))}
           </select>
 
-          <h2 className="font-semibold mb-2">Single V-Groove Dimensions (Metric)</h2>
+          <h2 className="font-semibold mb-2">Groove Dimensions (Metric)</h2>
           <input name="rootGap" placeholder="Root Gap (mm)" onChange={handleChange} className="border p-2 w-full mb-2" />
           <input name="rootFace" placeholder="Root Face (mm)" onChange={handleChange} className="border p-2 w-full mb-2" />
           <input name="bevelAngle" placeholder="Bevel Angle Per Side (deg)" onChange={handleChange} className="border p-2 w-full mb-2" />
+
+          <div className="my-4 text-center">
+            <img 
+              src={jointDiagram} 
+              alt="Single V-Groove Joint Geometry Diagram showing Root Face, Root Gap, and Bevel Angle" 
+             style={{ 
+               maxHeight: "220px", 
+               width: "auto", 
+               margin: "0 auto", 
+               borderRadius: "6px",
+               border: "1px solid #e5e7eb"
+             }} 
+           />
+         </div>
 
           <h2 className="font-semibold mt-4 mb-2">Fit Correction</h2>
           <select name="fitUp" onChange={handleChange} className="border p-2 w-full mb-2">
