@@ -153,7 +153,7 @@ export default function App() {
   return (
   <div className="p-4 max-w-5xl mx-auto">
     <div className="flex items-center gap-4 mb-4">
-      <img src={logo} alt="Company Logo" className="h-8 w-auto object-contain" />
+      <img src={logo} alt="Company Logo" style={{ height: "40px", maxWidth: "180px", objectFit: "contain" }} />
       <h1 className="text-2xl font-bold">Spool Robot Welding Calculator</h1>
     </div>
       
