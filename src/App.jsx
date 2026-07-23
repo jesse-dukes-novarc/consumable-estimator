@@ -33,7 +33,8 @@ export default function App() {
     processType: "",
     rootGap: "",
     rootFace: "",
-    bevelAngle: "", 
+    bevelAngleLeft: "30",
+    bevelAngleRight: "30", 
     wireDiameter: "",
     fitUp: "Exact Fit (1.0 Correction)",
     numberOfJoints: "1",
@@ -66,24 +67,39 @@ export default function App() {
     const INCH_TO_MM = 25.4;
     const STEEL_DENSITY = 0.00000805; // Density in kg/mm³
 
-    // --- Extract Pipe Data ---
+    // Extract Pipe Data
     const actualOD_in = PIPE_DATA[nps].OD;
     const actualOD_mm = actualOD_in * INCH_TO_MM;
     const wallThickness_in = PIPE_DATA[nps][schedule];
     const wallThickness_mm = wallThickness_in * INCH_TO_MM;
     const circumference_mm = Math.PI * actualOD_mm;
 
-    // --- Extract & Parse Joint Geometry ---
+    // Extract & Parse Joint Geometry
     const rg_mm = parseFloat(rootGap) || 0;
     const rf_mm = parseFloat(rootFace) || 0;
-    const bevel_deg = parseFloat(bevelAngle) || 30; // Default 30 deg per side
-    const alpha = (bevel_deg * Math.PI) / 180; // Radians
+    
+    // Parse left and right bevel angles (defaulting to 30 deg each if left blank)
+    const bevel_deg_left = parseFloat(form.bevelAngleLeft) || 30;
+    const bevel_deg_right = parseFloat(form.bevelAngleRight) || 30;
+    
+    // Convert both angles to radians
+    const alpha1 = (bevel_deg_left * Math.PI) / 180;
+    const alpha2 = (bevel_deg_right * Math.PI) / 180;
 
     // Preparation depth (Wall thickness minus root face)
     const prepDepth_mm = Math.max(0, wallThickness_mm - rf_mm);
 
+    // Calculate individual groove widths for each side
+    const grooveWidthLeft_mm = prepDepth_mm * Math.tan(alpha1);
+    const grooveWidthRight_mm = prepDepth_mm * Math.tan(alpha2);
+
     // 1. Calculate Base V-Groove Area (mm²)
-    let CSA_mm2 = (prepDepth_mm * Math.tan(alpha) * prepDepth_mm) + (rg_mm * wallThickness_mm);
+    // Area = (Left Triangle) + (Right Triangle) + (Root Gap Rectangle)
+    const leftTriangleArea = 0.5 * prepDepth_mm * grooveWidthLeft_mm;
+    const rightTriangleArea = 0.5 * prepDepth_mm * grooveWidthRight_mm;
+    const rootGapArea = rg_mm * wallThickness_mm;
+
+    let CSA_mm2 = leftTriangleArea + rightTriangleArea + rootGapArea;
 
     // 2. Determine ASME B31.3 Max Cap & Root Limits
     let maxProtrusion_mm = 1.5;
@@ -91,8 +107,8 @@ export default function App() {
     else if (wallThickness_mm > 12.7) maxProtrusion_mm = 4.0;
     else if (wallThickness_mm > 6.4) maxProtrusion_mm = 3.0;
 
-    // 3. Calculate Cap Width
-    const capWidth_mm = 2 * (prepDepth_mm * Math.tan(alpha)) + rg_mm + 3.0;
+    // 3. Calculate Total Cap Width (Left Width + Right Width + Root Gap + 3mm Overlap)
+    const capWidth_mm = grooveWidthLeft_mm + grooveWidthRight_mm + rg_mm + 3.0;
 
     // 4. Calculate Parabolic Cap Area
     const capArea_mm2 = (2 / 3) * capWidth_mm * maxProtrusion_mm;
@@ -178,120 +194,205 @@ export default function App() {
   const schedules = ["SCH 10", "SCH 40", "SCH 80"];
 
   return (
-  <div className="p-4 max-w-5xl mx-auto">
-    <div className="flex items-center gap-4 mb-4">
-      <img src={logo} alt="Company Logo" style={{ height: "40px", maxWidth: "180px", objectFit: "contain" }} />
-      <h1 className="text-2xl font-bold">SWR Consumable Estimator</h1>
-    </div>
-      
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="col-span-2 md:col-span-2">
+    <div className="min-h-screen bg-white p-4 md:p-8 font-sans text-black">
+      <div className="max-w-6xl mx-auto space-y-6">
+        
+        {/* --- HEADER SECTION --- */}
+        <div className="mb-6">
+          <img 
+            src={logo} 
+            alt="Company Logo" 
+            style={{ height: "40px", maxWidth: "180px", objectFit: "contain" }} 
+            className="mb-4" 
+          />
+          <h1 className="inline-block text-2xl md:text-3xl font-bold border-2 border-blue-500 rounded-lg px-4 py-1">
+            SWR Consumable Estimator
+          </h1>
+        </div>
+
+        {/* --- MAIN TWO-COLUMN GRID --- */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
           
-          <h2 className="font-semibold mb-2">Pipe & Process Selection</h2>
-          <div className="flex gap-2 mb-2">
-            <select name="nps" onChange={handleChange} className="border p-2 w-1/2">
-              <option value="">Select Pipe Size (OD)</option>
-              {Object.keys(PIPE_DATA).map((size) => (
-                <option key={size} value={size}>{size}"</option>
-              ))}
-            </select>
-            <select name="schedule" onChange={handleChange} className="border p-2 w-1/2">
-              <option value="">Select Schedule</option>
-              {schedules.map((sch) => (
-                <option key={sch} value={sch}>{sch}</option>
-              ))}
-            </select>
+          {/* ======================================================== */}
+          {/* 1. LEFT PANEL CARD (Inputs) - Spans 2 Columns            */}
+          {/* ======================================================== */}
+          <div className="lg:col-span-2 border-2 border-blue-500 rounded-[2.5rem] p-6 md:p-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              
+              {/* Left Side: Pipe & Groove Inputs */}
+              <div className="md:col-span-2 space-y-6">
+                
+                {/* Pipe & Process Selection */}
+                <div>
+                  <h2 className="text-xl font-bold mb-3">Pipe & Process Selection</h2>
+                  
+                  <div className="grid grid-cols-2 gap-2 mb-2">
+                    <select name="nps" onChange={handleChange} className="border border-gray-400 rounded p-2 text-sm bg-white w-full">
+                      <option value="">Select Pipe Size (OD)</option>
+                      {Object.keys(PIPE_DATA).map((size) => (
+                        <option key={size} value={size}>{size}"</option>
+                      ))}
+                    </select>
+
+                    <select name="schedule" onChange={handleChange} className="border border-gray-400 rounded p-2 text-sm bg-white w-full">
+                      <option value="">Select Schedule</option>
+                      {schedules.map((sch) => (
+                        <option key={sch} value={sch}>{sch}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <select name="processType" onChange={handleChange} className="border border-gray-400 rounded p-2 text-sm bg-white w-full">
+                      <option value="">Select Process Type</option>
+                      {processTypes.map((pt) => (
+                        <option key={pt} value={pt}>{pt}</option>
+                      ))}
+                    </select>
+
+                    <select name="wireDiameter" onChange={handleChange} className="border border-gray-400 rounded p-2 text-sm bg-white w-full">
+                      <option value="">Select Wire Diameter</option>
+                      {WIRE_OPTIONS.map((wire) => (
+                        <option key={wire.label} value={wire.value}>{wire.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Groove Dimensions */}
+                <div>
+                  <h2 className="text-xl font-bold mb-3">Groove Dimensions (Metric)</h2>
+                  
+                  <div className="grid grid-cols-2 gap-2 mb-4">
+                    <input 
+                      name="rootGap" 
+                      placeholder="Root Gap (mm)" 
+                      value={form.rootGap} 
+                      onChange={handleChange} 
+                      className="border border-gray-400 rounded p-2 text-sm w-full" 
+                    />
+                    <input 
+                      name="rootFace" 
+                      placeholder="Root Face (mm)" 
+                      value={form.rootFace} 
+                      onChange={handleChange} 
+                      className="border border-gray-400 rounded p-2 text-sm w-full" 
+                    />
+                  </div>
+
+                  <h3 className="font-bold text-md mb-2">Bevel Angles (Degrees)</h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input 
+                      name="bevelAngleLeft" 
+                      placeholder="Left Bevel Angle (deg)" 
+                      value={form.bevelAngleLeft} 
+                      onChange={handleChange} 
+                      className="border border-gray-400 rounded p-2 text-sm w-full" 
+                    />
+                    <input 
+                      name="bevelAngleRight" 
+                      placeholder="Right Bevel Angle (deg)" 
+                      value={form.bevelAngleRight} 
+                      onChange={handleChange} 
+                      className="border border-gray-400 rounded p-2 text-sm w-full" 
+                    />
+                  </div>
+                </div>
+
+                {/* Joint Diagram */}
+                <div className="pt-2 text-center">
+                  <img 
+                    src={jointDiagram} 
+                    alt="Single V-Groove Joint Geometry Diagram" 
+                    style={{ maxHeight: "200px", width: "auto", margin: "0 auto", borderRadius: "6px" }} 
+                  />
+                </div>
+
+              </div>
+
+              {/* Right Side: Fit, Joints, & Button */}
+              <div className="md:col-span-1 flex flex-col justify-between space-y-6">
+                <div>
+                  <h2 className="text-xl font-bold mb-2">Fit Correction</h2>
+                  <select name="fitUp" onChange={handleChange} className="border border-gray-400 rounded p-2 w-full text-sm bg-white mb-6">
+                    <option value="Exact Fit (1.0 Correction)">Exact Fit (1.0 Correction)</option>
+                    <option value="Good Fit (1.05 Correction)">Good Fit (1.05 Correction)</option>
+                    <option value="Bad Fit (1.10 Correction)">Bad Fit (1.10 Correction)</option>
+                  </select>
+
+                  <h2 className="text-xl font-bold mb-2">Number of Joints</h2>
+                  <input 
+                    name="numberOfJoints" 
+                    type="number" 
+                    min="1" 
+                    placeholder="Number of Joints" 
+                    value={form.numberOfJoints} 
+                    onChange={handleChange} 
+                    className="border border-gray-400 rounded p-2 w-full text-sm mb-6" 
+                  />
+
+                  <button 
+                    onClick={handleCalculate} 
+                    className="w-full bg-gray-200 border border-gray-400 text-black font-semibold py-2 px-4 rounded shadow-sm hover:bg-gray-300 transition"
+                  >
+                    Calculate Consumables
+                  </button>
+                </div>
+              </div>
+
+            </div>
           </div>
 
-          <select name="processType" onChange={handleChange} className="border p-2 w-full mb-2">
-            <option value="">Select Process Type</option>
-            {processTypes.map((pt) => (
-              <option key={pt} value={pt}>{pt}</option>
-            ))}
-          </select>
+          {/* ======================================================== */}
+          {/* 2. RIGHT PANEL CARD (Outputs) - Spans 1 Column           */}
+          {/* ======================================================== */}
+          <div className="lg:col-span-1 border-2 border-blue-500 rounded-[2.5rem] p-6 md:p-8 min-h-87.5">
+            <h2 className="text-xl font-bold mb-4 border-b pb-2">Calculation Output</h2>
+            
+            {result !== null ? (
+              <div className="space-y-6 text-sm">
+                <div>
+                  <h3 className="font-bold text-base mb-2">Per Joint</h3>
+                  <ul className="list-disc list-inside space-y-1">
+                    {result.wireLength_in > 0 && (
+                      <li>
+                        <strong>Wire Length:</strong> {result.wireLength_in.toFixed(1)} inches
+                      </li>
+                    )}
+                    <li>
+                      <strong>Wire Mass:</strong> {result.mass_lbs.toFixed(3)} lbs{" "}
+                      <span className="text-gray-500">({result.mass_kg.toFixed(3)} kg)</span>
+                    </li>
+                  </ul>
+                </div>
 
-          <select name="wireDiameter" onChange={handleChange} className="border p-2 w-full mb-4">
-            <option value="">Select Wire Diameter</option>
-            {WIRE_OPTIONS.map((wire) => (
-              <option key={wire.label} value={wire.value}>{wire.label}</option>
-            ))}
-          </select>
+                <div>
+                  <h3 className="font-bold text-base mb-2">
+                    Total for {result.numJoints} {result.numJoints === 1 ? 'Joint' : 'Joints'}
+                  </h3>
+                  <ul className="list-disc list-inside space-y-1">
+                    {result.totalWireLength_in > 0 && (
+                      <li>
+                        <strong>Total Wire Length:</strong> {result.totalWireLength_in.toFixed(1)} inches
+                      </li>
+                    )}
+                    <li>
+                      <strong>Total Wire Mass:</strong> {result.totalMass_lbs.toFixed(3)} lbs{" "}
+                      <span className="text-gray-500">({result.totalMass_kg.toFixed(3)} kg)</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            ) : (
+              <p className="text-gray-400 italic text-sm mt-4">
+                Fill in the details and click "Calculate Consumables" to see results.
+              </p>
+            )}
+          </div>
 
-          <h2 className="font-semibold mb-2">Groove Dimensions (Metric)</h2>
-          <input name="rootGap" placeholder="Root Gap (mm)" onChange={handleChange} className="border p-2 w-full mb-2" />
-          <input name="rootFace" placeholder="Root Face (mm)" onChange={handleChange} className="border p-2 w-full mb-2" />
-          <input name="bevelAngle" placeholder="Bevel Angle Per Side (deg)" onChange={handleChange} className="border p-2 w-full mb-2" />
-
-          <div className="my-4 text-center">
-            <img 
-              src={jointDiagram} 
-              alt="Single V-Groove Joint Geometry Diagram showing Root Face, Root Gap, and Bevel Angle" 
-             style={{ 
-               maxHeight: "220px", 
-               width: "auto", 
-               margin: "0 auto", 
-               borderRadius: "6px",
-               border: "1px solid #e5e7eb"
-             }} 
-           />
-         </div>
-
-          <h2 className="font-semibold mt-4 mb-2">Fit Correction</h2>
-          <select name="fitUp" onChange={handleChange} className="border p-2 w-full mb-2">
-            <option value="Exact Fit (1.0 Correction)">Exact Fit (1.0 Correction)</option>
-            <option value="Good Fit (1.05 Correction)">Good Fit (1.05 Correction)</option>
-            <option value="Bad Fit (1.10 Correction)">Bad Fit (1.10 Correction)</option>
-          </select>
-
-          <h2 className="font-semibold mt-4 mb-2">Number of Joints</h2>
-          <input name="numberOfJoints" type="number" min="1" placeholder="Number of Joints" value={form.numberOfJoints} onChange={handleChange} className="border p-2 w-full mb-2" />
         </div>
+
       </div>
-
-      <button onClick={handleCalculate} className="mt-6 px-4 py-2 bg-blue-600 text-white font-semibold rounded hover:bg-blue-700 transition">
-        Calculate Consumables
-      </button>
-
-      {result !== null && (
-        <div className="mt-6 p-4 bg-gray-50 border rounded-lg max-w-md">
-          <h2 className="text-xl font-bold mb-3 border-b pb-2">Calculation Output</h2>
-          <ul className="space-y-2 text-lg">
-            {/* <li>
-              <strong>Pipe OD:</strong> {result.od_in}" 
-              <span className="text-gray-500 text-sm ml-2">({result.od_mm.toFixed(1)} mm)</span>
-            </li>
-            <li>
-              <strong>Wall Thickness:</strong> {result.thickness_in}" 
-              <span className="text-gray-500 text-sm ml-2">({result.thickness_mm.toFixed(2)} mm)</span>
-            </li>
-            <li><strong>Weld Length (Circumference):</strong> {result.circumference_mm.toFixed(1)} mm</li>
-            */}
-            <div className="mt-4 pt-3 border-t border-gray-300">
-              <h3 className="font-bold text-gray-700 uppercase text-sm tracking-wider mb-2">Per Joint </h3>
-              {result.wireLength_in > 0 && (
-                <li className="text-green-700">
-                  <strong>Wire Length:</strong> {result.wireLength_in.toFixed(1)} inches
-                </li>
-              )}
-              <li className={result.wireLength_in > 0 ? "text-blue-700" : "text-blue-700"}>
-                <strong>Wire Mass:</strong> {result.mass_lbs.toFixed(3)} lbs <span className="text-sm text-gray-500">({result.mass_kg.toFixed(3)} kg)</span>
-              </li>
-            </div>
-
-            <div className="mt-4 pt-3 border-t border-gray-300">
-              <h3 className="font-bold text-gray-700 uppercase text-sm tracking-wider mb-2">Total for {result.numJoints} {result.numJoints === 1 ? 'Joint' : 'Joints'}</h3>
-              {result.totalWireLength_in > 0 && (
-                <li className="text-green-700 font-semibold">
-                  <strong>Total Wire Length:</strong> {result.totalWireLength_in.toFixed(1)} inches
-                </li>
-              )}
-              <li className="text-blue-700 font-semibold">
-                <strong>Total Wire Mass:</strong> {result.totalMass_lbs.toFixed(3)} lbs <span className="text-sm font-normal text-gray-500">({result.totalMass_kg.toFixed(3)} kg)</span>
-              </li>
-            </div>
-          </ul>
-        </div>
-      )}
     </div>
   );
 }
