@@ -267,7 +267,7 @@ export default function App() {
             <li><strong>Weld Length (Circumference):</strong> {result.circumference_mm.toFixed(1)} mm</li>
             */}
             <div className="mt-4 pt-3 border-t border-gray-300">
-              <h3 className="font-bold text-gray-700 uppercase text-sm tracking-wider mb-2">Per Joint (Includes 0.5" Waste)</h3>
+              <h3 className="font-bold text-gray-700 uppercase text-sm tracking-wider mb-2">Per Joint </h3>
               {result.wireLength_in > 0 && (
                 <li className="text-green-700">
                   <strong>Wire Length:</strong> {result.wireLength_in.toFixed(1)} inches
