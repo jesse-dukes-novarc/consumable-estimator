@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import logo from "./novarc-logo.svg";
 
 // Standard Pipe Dimensions Dictionary (OD in inches, Wall Thickness in inches)
 const PIPE_DATA = {
@@ -150,8 +151,11 @@ export default function App() {
   const schedules = ["SCH 10", "SCH 40", "SCH 80"];
 
   return (
-    <div className="p-4 max-w-5xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Spool Robot Welding Calculator</h1>
+  <div className="p-4 max-w-5xl mx-auto">
+    <div className="flex items-center gap-4 mb-4">
+      <img src={logo} alt="Company Logo" className="h-12 object-contain" />
+      <h1 className="text-2xl font-bold">Spool Robot Welding Calculator</h1>
+    </div>
       
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="col-span-2 md:col-span-2">
@@ -198,7 +202,7 @@ export default function App() {
             <option value="Bad Fit (1.10 Correction)">Bad Fit (1.10 Correction)</option>
           </select>
 
-          <h2 className="font-semibold mt-4 mb-2">Production Scope</h2>
+          <h2 className="font-semibold mt-4 mb-2">Number of Joints</h2>
           <input name="numberOfJoints" type="number" min="1" placeholder="Number of Joints" value={form.numberOfJoints} onChange={handleChange} className="border p-2 w-full mb-2" />
         </div>
       </div>
