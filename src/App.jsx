@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import logo from "./novarc-logo.svg";
 import jointDiagram from './Joint.png';
-import { Analytics } from "@vercel/analytics/next";
+import { Analytics } from "@vercel/analytics/react";
 
 // Standard Pipe Dimensions Dictionary (OD in inches, Wall Thickness in inches)
 const PIPE_DATA = {
@@ -267,6 +267,7 @@ export default function App() {
           </ul>
         </div>
       )}
+      <Analytics />
     </div>
   );
 }
