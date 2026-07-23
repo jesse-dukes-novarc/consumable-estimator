@@ -55,7 +55,8 @@ export default function App() {
       rootFace,
       bevelAngle,
       fitUp,
-      wireDiameter
+      wireDiameter,
+      numberOfJoints
     } = form;
 
     if (!nps || !schedule || !PIPE_DATA[nps] || !PIPE_DATA[nps][schedule]) {
@@ -63,33 +64,61 @@ export default function App() {
       return;
     }
 
-    const PI = Math.PI;
     const INCH_TO_MM = 25.4;
     const STEEL_DENSITY = 0.00000805; // Density in kg/mm³
 
-    // 1. Calculate Base V-Groove Area
+    // --- Extract Pipe Data ---
+    const actualOD_in = PIPE_DATA[nps].OD;
+    const actualOD_mm = actualOD_in * INCH_TO_MM;
+    const wallThickness_in = PIPE_DATA[nps][schedule];
+    const wallThickness_mm = wallThickness_in * INCH_TO_MM;
+    const circumference_mm = Math.PI * actualOD_mm;
+
+    // --- Extract & Parse Joint Geometry ---
+    const rg_mm = parseFloat(rootGap) || 0;
+    const rf_mm = parseFloat(rootFace) || 0;
+    const bevel_deg = parseFloat(bevelAngle) || 30; // Default 30 deg per side
+    const alpha = (bevel_deg * Math.PI) / 180; // Radians
+
+    // Preparation depth (Wall thickness minus root face)
+    const prepDepth_mm = Math.max(0, wallThickness_mm - rf_mm);
+
+    // 1. Calculate Base V-Groove Area (mm²)
     let CSA_mm2 = (prepDepth_mm * Math.tan(alpha) * prepDepth_mm) + (rg_mm * wallThickness_mm);
 
-    // 2. Determine ASME B31.3 Max Cap & Root Limits based on Wall Thickness
-    // B31.3 Table 341.3.2 uses the same allowable limits for both cap reinforcement and internal protrusion.
-    let maxProtrusion_mm = 0;
-    if (wallThickness_mm <= 6.4) maxProtrusion_mm = 1.5;
-    else if (wallThickness_mm <= 12.7) maxProtrusion_mm = 3.0;
-    else if (wallThickness_mm <= 25.4) maxProtrusion_mm = 4.0;
-    else maxProtrusion_mm = 5.0;
+    // 2. Determine ASME B31.3 Max Cap & Root Limits
+    let maxProtrusion_mm = 1.5;
+    if (wallThickness_mm > 25.4) maxProtrusion_mm = 5.0;
+    else if (wallThickness_mm > 12.7) maxProtrusion_mm = 4.0;
+    else if (wallThickness_mm > 6.4) maxProtrusion_mm = 3.0;
 
-    // 3. Calculate Cap Width (Groove top width + 3mm total overlap)
+    // 3. Calculate Cap Width
     const capWidth_mm = 2 * (prepDepth_mm * Math.tan(alpha)) + rg_mm + 3.0;
 
     // 4. Calculate Parabolic Cap Area
-    const capArea_mm2 = (2/3) * capWidth_mm * maxProtrusion_mm;
+    const capArea_mm2 = (2 / 3) * capWidth_mm * maxProtrusion_mm;
 
-    // 5. Calculate Root Penetration Area (Half-Circle)
-    // Using maxProtrusion_mm as the radius (r) of the half circle
+    // 5. Calculate Root Penetration Area
     const rootArea_mm2 = 0.5 * Math.PI * Math.pow(maxProtrusion_mm, 2);
 
-    // 6. Total Cross Sectional Area
+    // 6. Total Cross-Sectional Area
     CSA_mm2 = CSA_mm2 + capArea_mm2 + rootArea_mm2;
+
+    // Fit-up Factor
+    let fitFactor = 1.0;
+    if (fitUp.includes("1.05")) fitFactor = 1.05;
+    if (fitUp.includes("1.10")) fitFactor = 1.10;
+
+    // Calculate Initial Wire Volume Required per Joint (mm³)
+    let wireVolume_mm3 = CSA_mm2 * circumference_mm * fitFactor;
+
+    // Process Deposition Efficiency Factor
+    let efficiency = 0.96; // Default MIG ~96%
+    if (processType === "TIG ~94%") efficiency = 0.94;
+    if (processType === "MIG Hyperfill ~90%") efficiency = 0.90;
+
+    // Adjust volume required based on deposition efficiency
+    wireVolume_mm3 = wireVolume_mm3 / efficiency;
 
     // 7. Calculate Wire Length Required & Clipping Waste
     const wd_in = parseFloat(wireDiameter);
@@ -98,22 +127,19 @@ export default function App() {
     if (!isNaN(wd_in) && wd_in > 0) {
       const wd_mm = wd_in * INCH_TO_MM;
       
-      // Cross-sectional area of a single wire: pi * (r^2)
       let wireCSA_mm2 = Math.PI * Math.pow(wd_mm / 2, 2);
       
-      // Double the effective area for Hyperfill
       if (processType === "MIG Hyperfill ~90%") {
         wireCSA_mm2 *= 2;
       }
       
-      // Length = Volume / Area
       let wireLength_mm = wireVolume_mm3 / wireCSA_mm2;
       wireLength_in = wireLength_mm / INCH_TO_MM; 
       
       // ADD CLIPPING WASTE: 0.5 inches per joint
       wireLength_in += 0.5;
       
-      // Recalculate total volume per joint to include the clipped waste
+      // Recalculate total volume per joint including waste
       wireLength_mm = wireLength_in * INCH_TO_MM;
       wireVolume_mm3 = wireCSA_mm2 * wireLength_mm; 
     }
@@ -129,18 +155,18 @@ export default function App() {
     const totalWireLength_in = wireLength_in * numJoints;
 
     setResult({
-      mass_kg: mass_kg,
-      mass_lbs: mass_lbs,
-      totalMass_kg: totalMass_kg,
-      totalMass_lbs: totalMass_lbs,
-      wireLength_in: wireLength_in,
-      totalWireLength_in: totalWireLength_in,
-      numJoints: numJoints,
+      mass_kg,
+      mass_lbs,
+      totalMass_kg,
+      totalMass_lbs,
+      wireLength_in,
+      totalWireLength_in,
+      numJoints,
       od_in: actualOD_in,
       od_mm: actualOD_mm,
       thickness_in: wallThickness_in,
       thickness_mm: wallThickness_mm,
-      circumference_mm: circumference_mm
+      circumference_mm
     });
   };
 
