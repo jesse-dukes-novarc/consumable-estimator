@@ -256,7 +256,7 @@ export default function App() {
         <div className="mt-6 p-4 bg-gray-50 border rounded-lg max-w-md">
           <h2 className="text-xl font-bold mb-3 border-b pb-2">Calculation Output</h2>
           <ul className="space-y-2 text-lg">
-            <li>
+            {/* <li>
               <strong>Pipe OD:</strong> {result.od_in}" 
               <span className="text-gray-500 text-sm ml-2">({result.od_mm.toFixed(1)} mm)</span>
             </li>
@@ -265,7 +265,7 @@ export default function App() {
               <span className="text-gray-500 text-sm ml-2">({result.thickness_mm.toFixed(2)} mm)</span>
             </li>
             <li><strong>Weld Length (Circumference):</strong> {result.circumference_mm.toFixed(1)} mm</li>
-            
+            */}
             <div className="mt-4 pt-3 border-t border-gray-300">
               <h3 className="font-bold text-gray-700 uppercase text-sm tracking-wider mb-2">Per Joint (Includes 0.5" Waste)</h3>
               {result.wireLength_in > 0 && (
