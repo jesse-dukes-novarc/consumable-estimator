@@ -213,9 +213,8 @@ export default function App() {
         {/* --- MAIN TWO-COLUMN GRID --- */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
           
-          {/* ======================================================== */}
+          
           {/* 1. LEFT PANEL CARD (Inputs) - Spans 2 Columns            */}
-          {/* ======================================================== */}
           <div className="lg:col-span-2 border-2 border-blue-500 rounded-[2.5rem] p-6 md:p-8">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               
@@ -228,7 +227,7 @@ export default function App() {
                   
                   <div className="grid grid-cols-2 gap-2 mb-2">
                     <select name="nps" onChange={handleChange} className="border border-gray-400 rounded p-2 text-sm bg-white w-full">
-                      <option value="">Select Pipe Size (OD)</option>
+                      <option value="">Select Pipe Size </option>
                       {Object.keys(PIPE_DATA).map((size) => (
                         <option key={size} value={size}>{size}"</option>
                       ))}
@@ -343,9 +342,8 @@ export default function App() {
             </div>
           </div>
 
-          {/* ======================================================== */}
+          
           {/* 2. RIGHT PANEL CARD (Outputs) - Spans 1 Column           */}
-          {/* ======================================================== */}
           <div className="lg:col-span-1 border-2 border-blue-500 rounded-[2.5rem] p-6 md:p-8 min-h-87.5">
             <h2 className="text-xl font-bold mb-4 border-b pb-2">Calculation Output</h2>
             
